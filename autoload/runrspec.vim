@@ -163,6 +163,13 @@ function! s:do_rspec(full_cmd)
     silent setlocal nobuflisted
     silent execute 'resize' g:run_rspec_result_lines
     execute ':normal i' . 'Running spec...'
+  elseif has('nvim')
+    let job = jobstart(a:full_cmd, {
+          \ 'on_stdout': function('s:show_result'),
+          \ 'on_stderr': function('s:show_result')
+          \ })
+    silent setlocal nobuflisted
+    silent execute 'resize' g:run_rspec_result_lines
   else
     silent execute 'r!' a:full_cmd
     silent setlocal nobuflisted nomodifiable readonly
@@ -245,4 +252,15 @@ endfunction
 
 function! s:show_info(message)
   echo '[run-rspec] ' . a:message
+endfunction
+
+function! s:show_result(job_id, msg, event)
+  let linecount = getbufinfo(s:result_buffer)[0]['linecount']
+
+  if len(a:msg) == 1
+    let last_msg = getbufline(s:result_buffer, '$')[0]
+    call setbufline(s:result_buffer, linecount, l:last_msg . a:msg[0])
+  else
+    call setbufline(s:result_buffer, linecount + 1, a:msg)
+  endif
 endfunction
